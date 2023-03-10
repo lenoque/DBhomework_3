@@ -325,45 +325,53 @@ OR name ILIKE '% my';
 
 --Количество исполнителей в каждом жанре.
 
-SELECT COUNT(musicician_id) FROM genres_id AS g;
+SELECT COUNT(musician_id), g.name FROM genres AS g
 LEFT JOIN musicians_genres AS mg ON g.id = mg.genre_id 
 GROUP BY g.name
 ORDER BY COUNT(name) DESC;
 
 --Количество треков, вошедших в альбомы 2019–2020 годов.
 
-SELECT s.name, a.release_date FROM Album AS a
+SELECT a.name, count(t.id) FROM albums AS a
 LEFT JOIN tracks AS t ON t.album_id = a.id
-WHERE a.release_date = 2019 OR a.release_date = 2020;
+where a.release_date >= '2019-01-01' AND a.release_date < '2020-12-31'
+group by a.name;
+
+
 --Средняя продолжительность треков по каждому альбому.
 
-SELECT a.name, AVG(duration_in_sec) FROM Song AS s 
-LEFT JOIN albums AS a ON a.id = s.album_id 
-GROUP BY a.name
-ORDER BY AVG(duration_in_sec) DESC;
+--SELECT a.name,  FROM tracks t
+--LEFT JOIN albums AS a ON a.id = s.album_id 
+--GROUP BY a.name
+--ORDER BY AVG(duration_in_sec) DESC;
+
+SELECT a.name, AVG(t.duration_in_sec) FROM albums AS a
+LEFT JOIN tracks AS t ON t.album_id = a.id
+group by a.name;
+
 
 --Все исполнители, которые не выпустили альбомы в 2020 году.
 
 SELECT m.name FROM musicians AS m
 LEFT JOIN albums_musicians AS am ON am.musician_id = m.id
 LEFT JOIN albums AS a ON a.id = am.album_id 
-WHERE release_date != 2020;
+WHERE EXTRACT(year from release_date) != 2020;
 
 --Названия сборников, в которых присутствует конкретный исполнитель (выберите его сами).
 
 SELECT DISTINCT c.name FROM collections AS c 
-LEFT JOIN collections_tracks AS ct ON t.collection_id = c.id 
+LEFT JOIN collections_tracks AS ct ON ct.collection_id = c.id 
 LEFT JOIN tracks AS t ON t.id = ct.track_id 
-LEFT JOIN albums AS a ON a.id = s.album_id 
+LEFT JOIN albums AS a ON a.id = t.album_id 
 LEFT JOIN albums_musicians AS am ON am.album_id = a.id 
 LEFT JOIN musicians AS m ON m.id = am.musician_id 
 WHERE m.name = 'No Doubt';
 
 --Названия альбомов, в которых присутствуют исполнители более чем одного жанра.
 
-SELECT a.name FROM Album AS a
+SELECT a.name FROM albums AS a
 LEFT JOIN albums_musicians AS am ON am.album_id = a.id 
-LEFT JOIN musician AS m ON m.id = am.musician_id
+LEFT JOIN musicians  AS m ON m.id = am.musician_id
 LEFT JOIN musicians_genres AS mg ON mg.musician_id = m.id 
 LEFT JOIN genres AS g ON g.id = mg.genre_id
 GROUP BY a.name 
@@ -372,21 +380,32 @@ HAVING COUNT(g.name) > 1;
 --Наименования треков, которые не входят в сборники.
 
 SELECT t.name FROM tracks AS t
-LEFT JOIN collections_tracks AS ct ON ct.song_id = c.id 
-WHERE ct.song_id IS NULL;
+LEFT JOIN collections_tracks AS ct ON ct.track_id = t.id 
+WHERE ct.track_id IS NULL;
 
 
 --Исполнитель или исполнители, написавшие самый короткий по продолжительности трек, — теоретически таких треков может быть несколько.
 
-SELECT MAX(duration_in_sec), MIN(duration_in_sec) FROM tracks;
+
+select distinct m.name from musicians m 
+inner join albums_musicians am ON am.musician_id = m.id 
+inner join  tracks t on t.album_id = am.album_id 
+where t.duration_in_sec  = (select min(duration_in_sec) from tracks)
+
+
+--SELECT MAX(duration_in_sec), MIN(duration_in_sec) FROM tracks;
+
+
 
 --Названия альбомов, содержащих наименьшее количество треков.
 
-SELECT DISTINCT a.name FROM albums AS a
-LEFT JOIN tracks AS t ON t.album_id = a.id 
-WHERE t.album_id IN (
-	SELECT 	album_id FROM tracks 
-	GROUP BY album_id
-	ORDER BY COUNT(id)
-	LIMIT 1); 
+select name  from (
+select a.name, count(t.id), rank() OVER (ORDER BY count(t.id) asc) pos
+from albums a 
+inner join tracks t on t.album_id = a.id
+group by a.name
+) _
+where pos=1
+
+
 

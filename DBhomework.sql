@@ -86,13 +86,13 @@ CREATE TABLE if not EXISTS collections_tracks(
 	VALUES ('Ska');
 
 INSERT INTO albums (name, release_date)
-VALUES ('Highway to Hell', '2019-02-02');
+VALUES ('Highway to Hell', '1979-02-02');
 
 INSERT INTO albums (name, release_date)
 VALUES ('One Step Beyond…', '1979-02-02');
 
 INSERT INTO albums (name, release_date)
-VALUES ('Led Zeppelin', '2019-02-02');
+VALUES ('Led Zeppelin', '1969-02-02');
 
 INSERT INTO albums (name, release_date)
 VALUES ('Tragic Kingdom', '1995-02-02');
@@ -155,28 +155,28 @@ INSERT INTO tracks (name, album_id, duration_in_sec)
 VALUES ('Voyeur', 7, 256);
 
 INSERT INTO collections (name, created_at)
-VALUES ('collection1', '1999-01-08 00:00:00');
+VALUES ('collection1', now());
 
 INSERT INTO collections (name, created_at)
-VALUES ('collection2', '2002-01-08 00:00:00');
+VALUES ('collection2', now());
 
 INSERT INTO collections (name, created_at)
-VALUES ('collection3', '2005-01-08 00:00:00');
+VALUES ('collection3', now());
 
 INSERT INTO collections (name, created_at)
-VALUES ('collection4', '2008-01-08 00:00:00');
+VALUES ('collection4', now());
 
 INSERT INTO collections (name, created_at)
-VALUES ('collection5', '2011-01-08 00:00:00');
+VALUES ('collection5', now());
 
 INSERT INTO collections (name, created_at)
-VALUES ('collection6', '2014-01-08 00:00:00');
+VALUES ('collection6', now());
 
 INSERT INTO collections (name, created_at)
-VALUES ('collection7', '2017-01-08 00:00:00');
+VALUES ('collection7', now());
 
 INSERT INTO collections (name, created_at)
-VALUES ('collection8', '2020-01-08 00:00:00');
+VALUES ('collection8', now());
 
 INSERT INTO albums_musicians (album_id, musician_id)
 VALUES (1, 1);
@@ -283,110 +283,34 @@ VALUES (8, 13);
 
 
 --Select-запросы:
-
 --название и год выхода альбомов, вышедших в 2018 году;
-SELECT 
-name, release_date
-FROM albums
-WHERE  extract (year from release_date) = 2018;
 
+SELECT name, release_date FROM albums
+WHERE  extract (year from release_date) = 2018;
 --название и продолжительность самого длительного трека;
+
 SELECT name, duration_in_sec FROM tracks
 ORDER BY duration_in_sec DESC
 LIMIT 1;
-
-
 --название треков, продолжительность которых не менее 3,5 минуты;
+
 SELECT name FROM tracks 
 WHERE duration_in_sec > 210;
 
 --названия сборников, вышедших в период с 2018 по 2020 год включительно;
 
 SELECT name FROM collections 
-WHERE created_at >= '2018-01-01' AND created_at < '2020-12-31';
+WHERE created_at >= 2018-01-01 AND created_at < 2021-01-01;
 
 --исполнители, чье имя состоит из 1 слова;
 
 SELECT name FROM musicians
-WHERE name NOT LIKE '% %';
+WHERE name NOT LIKE '%%';
 
 
 --название треков, которые содержат слово "мой"/"my".
 
 SELECT name FROM tracks 
-WHERE name ILIKE '% мой %' 
-OR name ILIKE '% my %' 
-or name ILIKE 'мой %' 
-OR name ILIKE 'my %' 
-or name ILIKE '% мой' 
-OR name ILIKE '% my';
+WHERE name ILIKE '% мой %' OR name ILIKE '% my %';
 
-
-
---Количество исполнителей в каждом жанре.
-
-SELECT COUNT(musicician_id) FROM genres_id AS g;
-LEFT JOIN musicians_genres AS mg ON g.id = mg.genre_id 
-GROUP BY g.name
-ORDER BY COUNT(name) DESC;
-
---Количество треков, вошедших в альбомы 2019–2020 годов.
-
-SELECT s.name, a.release_date FROM Album AS a
-LEFT JOIN tracks AS t ON t.album_id = a.id
-WHERE a.release_date = 2019 OR a.release_date = 2020;
---Средняя продолжительность треков по каждому альбому.
-
-SELECT a.name, AVG(duration_in_sec) FROM Song AS s 
-LEFT JOIN albums AS a ON a.id = s.album_id 
-GROUP BY a.name
-ORDER BY AVG(duration_in_sec) DESC;
-
---Все исполнители, которые не выпустили альбомы в 2020 году.
-
-SELECT m.name FROM musicians AS m
-LEFT JOIN albums_musicians AS am ON am.musician_id = m.id
-LEFT JOIN albums AS a ON a.id = am.album_id 
-WHERE release_date != 2020;
-
---Названия сборников, в которых присутствует конкретный исполнитель (выберите его сами).
-
-SELECT DISTINCT c.name FROM collections AS c 
-LEFT JOIN collections_tracks AS ct ON t.collection_id = c.id 
-LEFT JOIN tracks AS t ON t.id = ct.track_id 
-LEFT JOIN albums AS a ON a.id = s.album_id 
-LEFT JOIN albums_musicians AS am ON am.album_id = a.id 
-LEFT JOIN musicians AS m ON m.id = am.musician_id 
-WHERE m.name = 'No Doubt';
-
---Названия альбомов, в которых присутствуют исполнители более чем одного жанра.
-
-SELECT a.name FROM Album AS a
-LEFT JOIN albums_musicians AS am ON am.album_id = a.id 
-LEFT JOIN musician AS m ON m.id = am.musician_id
-LEFT JOIN musicians_genres AS mg ON mg.musician_id = m.id 
-LEFT JOIN genres AS g ON g.id = mg.genre_id
-GROUP BY a.name 
-HAVING COUNT(g.name) > 1;
-
---Наименования треков, которые не входят в сборники.
-
-SELECT t.name FROM tracks AS t
-LEFT JOIN collections_tracks AS ct ON ct.song_id = c.id 
-WHERE ct.song_id IS NULL;
-
-
---Исполнитель или исполнители, написавшие самый короткий по продолжительности трек, — теоретически таких треков может быть несколько.
-
-SELECT MAX(duration_in_sec), MIN(duration_in_sec) FROM tracks;
-
---Названия альбомов, содержащих наименьшее количество треков.
-
-SELECT DISTINCT a.name FROM albums AS a
-LEFT JOIN tracks AS t ON t.album_id = a.id 
-WHERE t.album_id IN (
-	SELECT 	album_id FROM tracks 
-	GROUP BY album_id
-	ORDER BY COUNT(id)
-	LIMIT 1); 
 
